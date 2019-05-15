@@ -1,0 +1,7 @@
+eddy  =  eddy
+
+turbulentDFSEMInletFvPatchVectorField.C
+$(eddy)/eddy.C
+$(eddy)/eddyIO.C
+
+LIB = $(FOAM_USER_LIBBIN)/DFSEMInlet
