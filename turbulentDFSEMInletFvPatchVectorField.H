@@ -1,7 +1,7 @@
 // Backport of turbulentDFSEMInlet BC to OpenFOAM 5.x
 // Copyright (C) 2015 OpenFOAM Foundation
 // Copyright (C) 2016-2017 OpenCFD Ltd.
-// Copyright (C) 2019 Alexey Matveichev
+// Copyright (C) 2019-2020 Alexey Matveichev
 // License: GPLv3
 // Description
 //     Velocity boundary condition including synthesised eddies for use with LES

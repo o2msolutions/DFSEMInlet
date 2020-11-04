@@ -1,7 +1,7 @@
 // Backport of turbulentDFSEMInlet BC to OpenFOAM 5.x
 // Copyright (C) 2015 OpenFOAM Foundation
 // Copyright (C) 2016-2017 OpenCFD Ltd.
-// Copyright (C) 2019 Alexey Matveichev
+// Copyright (C) 2019-2020 Alexey Matveichev
 // License: GPLv3
 
 #include "turbulentDFSEMInletFvPatchVectorField.H"
@@ -649,8 +649,8 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::calcOverlappingProcEddies
     mapDistribute map
     (
         segmentI,
-        Xfer<labelListList>(sendMap),
-        Xfer<labelListList>(constructMap)
+        std::move(sendMap),
+        std::move(constructMap)
     );
 
     PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking);
@@ -755,11 +755,11 @@ turbulentDFSEMInletFvPatchVectorField
     mapMethod_(ptf.mapMethod_),
     mapperPtr_(nullptr),
     interpolateR_(ptf.interpolateR_),
-    R_(ptf.R_, mapper),
+    R_(mapper(ptf.R_)),
     interpolateL_(ptf.interpolateL_),
-    L_(ptf.L_, mapper),
+    L_(mapper(ptf.L_)),
     interpolateU_(ptf.interpolateU_),
-    U_(ptf.U_, mapper),
+    U_(mapper(ptf.U_)),
     UMean_(ptf.UMean_),
 
     patchArea_(ptf.patchArea_),
@@ -773,7 +773,7 @@ turbulentDFSEMInletFvPatchVectorField
     patchNormal_(ptf.patchNormal_),
     v0_(ptf.v0_),
     rndGen_(ptf.rndGen_),
-    sigmax_(ptf.sigmax_, mapper),
+    sigmax_(mapper(ptf.sigmax_)),
     maxSigmaX_(ptf.maxSigmaX_),
     nEddy_(0),
     curTimeIndex_(-1),
@@ -938,11 +938,10 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::autoMap
 
     // Clear interpolator
     mapperPtr_.clear();
-    R_.autoMap(m);
-    L_.autoMap(m);
-    U_.autoMap(m);
-
-    sigmax_.autoMap(m);
+    m(R_, R_);
+    m(L_, L_);
+    m(U_, U_);
+    m(sigmax_, sigmax_);
 }
 
 
@@ -1083,7 +1082,7 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::updateCoeffs()
 void Foam::turbulentDFSEMInletFvPatchVectorField::write(Ostream& os) const
 {
     fvPatchField<vector>::write(os);
-    writeEntry("value", os);
+    writeEntry(os, "value", *this);
     os.writeKeyword("delta") << this->delta_ << token::END_STATEMENT << nl;
     writeEntryIfDifferent<scalar>(os, "d", 1.0, d_);
     writeEntryIfDifferent<scalar>(os, "kappa", 0.41, kappa_);
@@ -1093,17 +1092,17 @@ void Foam::turbulentDFSEMInletFvPatchVectorField::write(Ostream& os) const
 
     if (!interpolateR_)
     {
-        R_.writeEntry("R", os);
+        writeEntry(os, "R", R_);
     }
 
     if (!interpolateL_)
     {
-        L_.writeEntry("L", os);
+        writeEntry(os, "L", L_);
     }
 
     if (!interpolateU_)
     {
-        U_.writeEntry("U", os);
+        writeEntry(os, "U", U_);
     }
 
     if (!mapMethod_.empty())
